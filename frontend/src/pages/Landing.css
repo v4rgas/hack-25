@@ -4,7 +4,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #1a1a2e;
+  background: var(--bg-primary);
 }
 
 .landing-content {
@@ -30,7 +30,7 @@
   left: 8px;
   right: 8px;
   height: 3px;
-  background: #fff;
+  background: var(--text-primary);
   transform-origin: center;
   animation: line-grow-h 0.4s ease-out 0.6s both;
 }
@@ -41,7 +41,7 @@
   left: calc(50% - 1.5px);
   width: 3px;
   height: 65.5px;
-  background: #fff;
+  background: var(--text-primary);
   transform-origin: top;
   animation: line-grow-v 0.4s ease-out 0.7s both;
 }
@@ -51,7 +51,7 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--text-primary);
 }
 
 .dot-left {
@@ -147,7 +147,7 @@
 .title {
   font-size: 4rem;
   font-weight: 300;
-  color: #fff;
+  color: var(--text-primary);
   margin: 0 0 1rem 0;
   letter-spacing: 0.2em;
   font-family: system-ui, -apple-system, sans-serif;
@@ -155,7 +155,7 @@
 
 .tagline {
   font-size: 1.1rem;
-  color: #a0a0a0;
+  color: var(--text-secondary);
   line-height: 1.6;
   margin: 0 0 3rem 0;
   font-family: system-ui, -apple-system, sans-serif;
@@ -164,8 +164,8 @@
 .cta-button {
   display: inline-block;
   padding: 1rem 2rem;
-  background: #fff;
-  color: #1a1a2e;
+  background: var(--accent-primary);
+  color: var(--accent-text);
   text-decoration: none;
   font-size: 1rem;
   font-weight: 500;
@@ -176,5 +176,5 @@
 
 .cta-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 20px var(--shadow-color);
 }

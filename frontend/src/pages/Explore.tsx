@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import { EmbeddingAtlas } from "embedding-atlas/react"
 import { Coordinator, wasmConnector } from '@uwdata/vgplot'
 import { loadParquet } from '@uwdata/mosaic-sql'
+import { useTheme } from '../context/ThemeContext'
 
 export function Explore() {
+  const { theme } = useTheme()
   const [coordinator, setCoordinator] = useState<Coordinator | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -26,18 +28,18 @@ export function Explore() {
         await coord.exec("UPDATE data SET _row_id = rowid")
 
         // Add category column based on MontoEstimado ranges
-        await coord.exec("ALTER TABLE data ADD COLUMN _category INTEGER")
+        await coord.exec("ALTER TABLE data ADD COLUMN _category VARCHAR")
         await coord.exec(`
           UPDATE data
           SET _category = CASE
-            WHEN MontoEstimado IS NULL THEN 0
-            WHEN MontoEstimado < 1000000 THEN 1
-            WHEN MontoEstimado < 5000000 THEN 2
-            WHEN MontoEstimado < 10000000 THEN 3
-            WHEN MontoEstimado < 50000000 THEN 4
-            WHEN MontoEstimado < 100000000 THEN 5
-            WHEN MontoEstimado < 500000000 THEN 6
-            ELSE 7
+            WHEN MontoEstimado IS NULL THEN 'Unknown'
+            WHEN MontoEstimado < 1000000 THEN '< $1M'
+            WHEN MontoEstimado < 5000000 THEN '$1M - $5M'
+            WHEN MontoEstimado < 10000000 THEN '$5M - $10M'
+            WHEN MontoEstimado < 50000000 THEN '$10M - $50M'
+            WHEN MontoEstimado < 100000000 THEN '$50M - $100M'
+            WHEN MontoEstimado < 500000000 THEN '$100M - $500M'
+            ELSE '> $500M'
           END
         `)
 
@@ -78,11 +80,12 @@ export function Explore() {
     <div className="app">
       <EmbeddingAtlas
         coordinator={coordinator}
+        colorScheme={theme}
         data={{
           table: "data",
           id: "_row_id",
           projection: { x: "x", y: "y" },
-          text: "CodigoExterno"
+          text: "tender_name"
         }}
         defaultChartsConfig={{
           embedding: {
@@ -94,9 +97,22 @@ export function Explore() {
               category: "_category",
               text: "CodigoExterno"
             }
+          },
+          override: {
+            "sql_predicates": {
+              type: "predicates",
+              title: "SQL Filters",
+              items: [
+                {
+                  name: "Quick Award (<150 days)",
+                  predicate: "date_diff('day', first_activity_date, FechaAdjudicacion) < 150"
+                }
+              ]
+            }
           }
         }}
         chartTheme={{
+          scheme: theme,
           categoryColors: () => {
             // Color scale for MontoEstimado ranges (low to high)
             return [

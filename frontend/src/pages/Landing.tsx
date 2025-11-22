@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom'
+import { ThemeToggle } from '../components/ThemeToggle'
 import './Landing.css'
 
 export function Landing() {
   return (
     <div className="landing">
+      <ThemeToggle />
       <div className="landing-content">
         <div className="logo">
           <div className="logo-t">
