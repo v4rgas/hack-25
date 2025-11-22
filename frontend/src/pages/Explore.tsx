@@ -25,6 +25,22 @@ export function Explore() {
         await coord.exec("ALTER TABLE data ADD COLUMN _row_id INTEGER")
         await coord.exec("UPDATE data SET _row_id = rowid")
 
+        // Add category column based on MontoEstimado ranges
+        await coord.exec("ALTER TABLE data ADD COLUMN _category INTEGER")
+        await coord.exec(`
+          UPDATE data
+          SET _category = CASE
+            WHEN MontoEstimado IS NULL THEN 0
+            WHEN MontoEstimado < 1000000 THEN 1
+            WHEN MontoEstimado < 5000000 THEN 2
+            WHEN MontoEstimado < 10000000 THEN 3
+            WHEN MontoEstimado < 50000000 THEN 4
+            WHEN MontoEstimado < 100000000 THEN 5
+            WHEN MontoEstimado < 500000000 THEN 6
+            ELSE 7
+          END
+        `)
+
         // Get table info to find columns
         const result = await coord.query("DESCRIBE data")
         console.log("Table schema:", result)
@@ -45,7 +61,7 @@ export function Explore() {
     return (
       <div className="app loading-screen">
         <div className="loader"></div>
-        <p className="loading-text">Estamos procesando los datos solo para ti</p>
+        <p className="loading-text">Calculando...</p>
       </div>
     )
   }
@@ -67,6 +83,36 @@ export function Explore() {
           id: "_row_id",
           projection: { x: "x", y: "y" },
           text: "CodigoExterno"
+        }}
+        defaultChartsConfig={{
+          embedding: {
+            type: "embedding",
+            title: "Embedding View",
+            data: {
+              x: "x",
+              y: "y",
+              category: "_category",
+              text: "CodigoExterno"
+            }
+          }
+        }}
+        chartTheme={{
+          categoryColors: () => {
+            // Color scale for MontoEstimado ranges (low to high)
+            return [
+              '#808080', // NULL/Unknown
+              '#2ecc71', // < 1M
+              '#3498db', // 1M-5M
+              '#9b59b6', // 5M-10M
+              '#f39c12', // 10M-50M
+              '#e67e22', // 50M-100M
+              '#e74c3c', // 100M-500M
+              '#c0392b'  // > 500M
+            ]
+          }
+        }}
+        embeddingViewConfig={{
+          autoLabelEnabled: false
         }}
       />
     </div>
