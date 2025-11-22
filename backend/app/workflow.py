@@ -47,14 +47,14 @@ class WorkflowState(TypedDict):
     input_data: RankingInput
 
     # Task investigation results (accumulated from parallel processing)
-    task_investigation_results: Annotated[List[TaskInvestigationOutput], add_messages]
+    task_investigation_results: Annotated[List[TaskInvestigationOutput], add]
 
     # Final output (ordered by task id)
     tasks_by_id: List[TaskInvestigationOutput]
     workflow_summary: str
 
     # Error tracking
-    errors: List[str]
+    errors: Annotated[List[str], add]
 
 
 class FraudDetectionWorkflow:
@@ -146,7 +146,9 @@ class FraudDetectionWorkflow:
         graph.add_edge("fetch_tender_data", "load_investigation_tasks")
         graph.add_edge("load_investigation_tasks", "ranking_node")
         graph.add_edge("ranking_node", "distribute_investigations")
-        graph.add_edge("distribute_investigations", "aggregate_results")
+        # Note: distribute_investigations uses Command/Send pattern, no direct edge needed
+        # The investigate_task nodes will route to aggregate_results
+        graph.add_edge("investigate_task", "aggregate_results")
         graph.add_edge("aggregate_results", END)
 
         return graph
@@ -286,11 +288,16 @@ Return the ranked tasks with rationale.
             self._send_log(session_id, f"Task ranking complete. Top {len(state['ranked_tasks'])} tasks selected.")
             print(f"Task ranking complete. Top {len(state['ranked_tasks'])} tasks selected.")
             for i, task in enumerate(state['ranked_tasks'], 1):
-                print(f"  {i}. Task {task['id']} ({task['code']}): {task['name'][:50]}...")
+                # Safely access task fields
+                task_id = task.get('id', 'unknown')
+                task_code = task.get('code', 'unknown')
+                task_name = task.get('name', 'unknown')
+                print(f"  {i}. Task {task_id} ({task_code}): {task_name[:50] if isinstance(task_name, str) else task_name}...")
 
         except Exception as e:
             self._send_log(session_id, f"Task ranking failed: {e}")
             print(f"Task ranking failed: {e}")
+            print(f"Traceback: {traceback.format_exc()}")
             state["errors"].append(f"Task ranking error: {str(e)}")
             # Fallback: use first 5 tasks
             state["ranked_tasks"] = state["investigation_tasks"][:5]
@@ -315,6 +322,7 @@ Return the ranked tasks with rationale.
 
         for idx, task in enumerate(state["ranked_tasks"]):
             # Prepare input for task investigation
+            task_id = task.get('id', idx)  # Use index as fallback
             task_input = {
                 "task": task,
                 "tender_context": state["input_data"],
@@ -337,11 +345,12 @@ Return the ranked tasks with rationale.
             update=state
         )
 
-    def _investigate_task(self, inputs: Dict[str, Any]) -> TaskInvestigationOutput:
+    def _investigate_task(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         """
         Investigation node that validates a specific task.
 
         This node is called in parallel for each ranked task.
+        Returns state update dictionary to accumulate results.
         """
         task = inputs.get("task")
         investigation_id = inputs.get("investigation_id", "unknown")
@@ -359,23 +368,29 @@ Return the ranked tasks with rationale.
 
             # Prepare message for investigation
             tender_context = inputs.get("tender_context")
+            task_name = task.get('name', 'Unknown task')
+            task_desc = task.get('desc', 'No description')
+            task_where = task.get('where_to_look', 'Not specified')
+            task_severity = task.get('severity', 'Unknown')
+            task_subtasks = task.get('subtasks', [])
+
             message = f"""
 INVESTIGATION TASK:
 
-Task ID: {task['id']}
-Task Code: {task['code']}
-Task Name: {task['name']}
+Task ID: {task_id}
+Task Code: {task_code}
+Task Name: {task_name}
 
 WHAT TO VALIDATE:
-{task['desc']}
+{task_desc}
 
 WHERE TO LOOK:
-{task['where_to_look']}
+{task_where}
 
-SEVERITY: {task['severity']}
+SEVERITY: {task_severity}
 
 SUBTASKS:
-{chr(10).join(f"{i+1}. {subtask}" for i, subtask in enumerate(task['subtasks']))}
+{chr(10).join(f"{i+1}. {subtask}" for i, subtask in enumerate(task_subtasks))}
 
 TENDER CONTEXT:
 - Tender ID: {tender_context.tender_id}
@@ -395,7 +410,7 @@ Please investigate this task systematically and report your findings.
             self._send_log(session_id, f"Running investigation for Task {task['id']} ({task['code']})...")
             detection_input = FraudDetectionInput(
                 tender_id=tender_context.tender_id,
-                risk_indicators=[task['name']],
+                risk_indicators=[task_name],
                 full_context={"task": task, "message": message}
             )
 
@@ -403,9 +418,9 @@ Please investigate this task systematically and report your findings.
 
             # Convert to TaskInvestigationOutput
             task_result = TaskInvestigationOutput(
-                task_id=task['id'],
-                task_code=task['code'],
-                task_name=task['name'],
+                task_id=task_id if isinstance(task_id, int) else 0,
+                task_code=task_code,
+                task_name=task_name,
                 validation_passed=not result.is_fraudulent,  # Inverse: fraud detected = validation failed
                 findings=result.anomalies,
                 investigation_summary=result.investigation_summary
@@ -414,7 +429,8 @@ Please investigate this task systematically and report your findings.
             self._send_log(session_id, f"Task {task['id']} investigation complete. Validation passed: {task_result.validation_passed}")
             print(f"Task {task['id']} investigation complete. Validation passed: {task_result.validation_passed}")
 
-            return task_result
+            # Return state update - this will be accumulated via the 'add' reducer
+            return {"task_investigation_results": [task_result]}
 
         except Exception as e:
             self._send_log(session_id, f"Task {task['id']} investigation failed: {e}")
@@ -428,6 +444,7 @@ Please investigate this task systematically and report your findings.
                 findings=[],
                 investigation_summary=f"Investigation failed: {str(e)}"
             )
+            return {"task_investigation_results": [error_result]}
 
     def _aggregate_results(self, state: WorkflowState) -> WorkflowState:
         """
