@@ -16,21 +16,13 @@ class GetPlanInput(BaseModel):
 
 @tool(args_schema=GetPlanInput)
 def get_plan(user_request: str) -> dict:
-    """Generate a structured task plan from a user request.
-
-    This tool analyzes user requests and breaks them down into clear, actionable tasks.
-    Each task is assigned to the most appropriate specialized agent.
-
-    Use this tool when you need to:
-    - Plan complex multi-step projects
-    - Break down ambiguous requests into concrete tasks
-    - Organize work across multiple specialized domains
+    """Create investigation plan for tender analysis. Call this FIRST.
 
     Args:
-        user_request: The user's request or objective to plan
+        user_request: Tender details and red flags to investigate
 
     Returns:
-        dict: A dictionary containing a list of structured tasks with prompts and assigned agents
+        dict: List of investigation tasks
     """
     # Initialize the planning agent
     plan_agent = PlanAgent()

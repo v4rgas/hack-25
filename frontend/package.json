@@ -10,9 +10,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@uwdata/mosaic-core": "^0.21.1",
+    "@uwdata/mosaic-spec": "^0.21.1",
+    "@uwdata/mosaic-sql": "^0.21.1",
+    "@uwdata/vgplot": "^0.21.1",
+    "embedding-atlas": "^0.13.0",
     "lucide-react": "^0.554.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.9.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
