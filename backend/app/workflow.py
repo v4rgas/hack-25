@@ -174,7 +174,7 @@ class FraudDetectionWorkflow:
         try:
             # Fetch tender metadata from API
             self._send_log(session_id, "Retrieving tender metadata from API...")
-            tender_response = get_tender(tender_id)
+            tender_response = asyncio.run(get_tender(tender_id))
             state["tender_response"] = tender_response
 
             self._send_log(session_id, f"Tender metadata fetched: {tender_response.name}")
