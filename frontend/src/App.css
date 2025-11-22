@@ -14,53 +14,40 @@
 }
 
 .loader {
-  display: flex;
-  gap: 8px;
-}
-
-.loader::before,
-.loader::after,
-.loader {
-  content: '';
-}
-
-.loader span {
-  width: 16px;
   height: 16px;
-  border-radius: 50%;
-  background: #e94560;
-  animation: bounce 1.4s ease-in-out infinite;
+  aspect-ratio: 4;
+  --_g: no-repeat radial-gradient(farthest-side,#fff 90%,#0000);
+  background:
+    var(--_g) left,
+    var(--_g) right;
+  background-size: 25% 100%;
+  display: flex;
 }
 
-.loader span:nth-child(1) {
-  animation-delay: 0s;
+.loader:before {
+  content: "";
+  flex: 1;
+  background: inherit;
+  animation: l50 2s infinite;
 }
 
-.loader span:nth-child(2) {
-  animation-delay: 0.2s;
-  background: #f39c12;
-}
-
-.loader span:nth-child(3) {
-  animation-delay: 0.4s;
-  background: #3498db;
-}
-
-@keyframes bounce {
-  0%, 80%, 100% {
-    transform: translateY(0);
-  }
-  40% {
-    transform: translateY(-30px);
-  }
+@keyframes l50 {
+  0%    {transform: translate( 37.5%) rotate(0)     }
+  16.67%{transform: translate( 37.5%) rotate(90deg) }
+  33.33%{transform: translate(-37.5%) rotate(90deg) }
+  50%   {transform: translate(-37.5%) rotate(180deg)}
+  66.67%{transform: translate(-37.5%) rotate(270deg)}
+  83.33%{transform: translate( 37.5%) rotate(270deg)}
+  100%  {transform: translate( 37.5%) rotate(360deg)}
 }
 
 .loading-text {
-  margin-top: 24px;
+  margin-top: 48px;
   font-size: 1.2rem;
   color: #fff;
   font-family: system-ui, -apple-system, sans-serif;
   animation: pulse 2s ease-in-out infinite;
+  letter-spacing: 0.1em;
 }
 
 @keyframes pulse {
