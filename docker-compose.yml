@@ -5,6 +5,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: app
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/app
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -18,7 +19,7 @@ services:
   backend:
     build: ./backend
     ports:
-      - "8000:8000"
+      - "8080:8080"
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/app
     depends_on:
@@ -30,7 +31,7 @@ services:
     ports:
       - "4321:4321"
     environment:
-      PUBLIC_API_URL: http://localhost:8000
+      PUBLIC_API_URL: http://localhost:8080
     depends_on:
       - backend
 
