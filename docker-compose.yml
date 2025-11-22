@@ -22,6 +22,13 @@ services:
       - "8001:8000"
     environment:
       DATABASE_URL: postgresql://postgres:postgres@db:5432/app
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/alembic:/app/alembic
+      - ./backend/datasets:/app/datasets
+      - ./backend/pyproject.toml:/app/pyproject.toml
+      - ./backend/alembic.ini:/app/alembic.ini
+    command: sh -c "uv run alembic upgrade head && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     depends_on:
       db:
         condition: service_healthy
@@ -29,9 +36,13 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "4321:4321"
+      - "5173:5173"
     environment:
-      PUBLIC_API_URL: http://localhost:8001
+      VITE_API_URL: http://localhost:8001
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - /app/node_modules
     depends_on:
       - backend
 

@@ -1,19 +1,14 @@
-FROM node:20-slim AS base
-RUN corepack enable && corepack prepare pnpm@latest --activate
+FROM node:20-alpine
 
 WORKDIR /app
 
-FROM base AS deps
+RUN npm install -g pnpm
+
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
-FROM base AS build
-COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN pnpm build
 
-FROM base AS runner
-COPY --from=build /app/dist ./dist
-RUN pnpm add serve
-EXPOSE 4321
-CMD ["pnpm", "serve", "dist", "-l", "4321"]
+EXPOSE 5173
+
+CMD ["pnpm", "run", "dev", "--host"]
