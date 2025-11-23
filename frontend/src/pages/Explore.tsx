@@ -89,7 +89,10 @@ export function Explore() {
           }
 
           // Store in cache for next time
-          const responseToCache = new Response(allChunks.buffer, {
+          // Create a new ArrayBuffer to satisfy TypeScript's strict type checking
+          const buffer = new ArrayBuffer(allChunks.byteLength)
+          new Uint8Array(buffer).set(allChunks)
+          const responseToCache = new Response(buffer, {
             headers: {
               'Content-Type': 'application/octet-stream',
               'Content-Length': allChunks.length.toString()
