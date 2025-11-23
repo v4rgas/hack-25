@@ -4,9 +4,12 @@ import './Detail.css'
 import { endpoints } from '../config/api'
 
 interface LogEvent {
-  type: 'log'
+  type: 'log' | 'result' | 'error'
   message: string
   timestamp: string
+  tasks_by_id?: any[]
+  workflow_summary?: string
+  status?: string
 }
 
 export function Detail() {
@@ -58,6 +61,11 @@ export function Detail() {
       console.log('Received log:', log)
 
       setLogs((prev) => [...prev, log])
+
+      // If we receive a result or error, stop investigating
+      if (log.type === 'result' || log.type === 'error') {
+        setIsInvestigating(false)
+      }
     }
 
     ws.onerror = (error) => {
@@ -82,7 +90,7 @@ export function Detail() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          message: `Investigate tender ${nodeData.CodigoExterno || nodeData.tender_name}: Analyze for potential fraud or anomalies`,
+          tender_id: nodeData.CodigoExterno,
         }),
       })
 
@@ -112,29 +120,143 @@ export function Detail() {
         </button>
         <h1 className="detail-title">{nodeData.tender_name || nodeData.CodigoExterno}</h1>
         {nodeData.CodigoExterno && (
-          <p className="detail-code">{nodeData.CodigoExterno}</p>
+          <div>
+            <p className="detail-code">{nodeData.CodigoExterno}</p>
+            <a
+              href={`https://www.mercadopublico.cl/fichaLicitacion.html?idLicitacion=${nodeData.CodigoExterno}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mercado-link"
+            >
+              Ver en Mercado Público →
+            </a>
+          </div>
         )}
-
-        <button
-          onClick={() => setShowDetails(!showDetails)}
-          className="toggle-details"
-        >
-          {showDetails ? 'Ocultar detalles' : 'Ver detalles'}
-        </button>
       </div>
+
+      {/* Summary Section */}
+      <div className="summary-section">
+        <div className="summary-row">
+          <span className="summary-label">Proveedor</span>
+          <span className="summary-value">{nodeData.supplier_name || 'N/A'}</span>
+        </div>
+        {nodeData.supplier_rut && (
+          <div className="summary-row">
+            <span className="summary-label">RUT</span>
+            <span className="summary-value">{nodeData.supplier_rut.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}</span>
+          </div>
+        )}
+        <div className="summary-row">
+          <span className="summary-label">Monto Adjudicado</span>
+          <span className="summary-value highlight">
+            {nodeData.MontoLineaAdjudica
+              ? `$${nodeData.MontoLineaAdjudica.toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+              : 'N/A'}
+          </span>
+        </div>
+        {nodeData.MontoEstimado && (
+          <div className="summary-row">
+            <span className="summary-label">Monto Estimado</span>
+            <span className="summary-value">
+              ${nodeData.MontoEstimado.toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+            </span>
+          </div>
+        )}
+        {nodeData.FechaAdjudicacion && new Date(nodeData.FechaAdjudicacion).getFullYear() >= 2000 && (
+          <div className="summary-row">
+            <span className="summary-label">Fecha Adjudicación</span>
+            <span className="summary-value">
+              {new Date(nodeData.FechaAdjudicacion).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}
+            </span>
+          </div>
+        )}
+        {nodeData.FechaPublicacion && new Date(nodeData.FechaPublicacion).getFullYear() >= 2000 && (
+          <div className="summary-row">
+            <span className="summary-label">Fecha Publicación</span>
+            <span className="summary-value">
+              {new Date(nodeData.FechaPublicacion).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}
+            </span>
+          </div>
+        )}
+        {nodeData.NumeroOferentes && (
+          <div className="summary-row">
+            <span className="summary-label">Oferentes</span>
+            <span className="summary-value">{nodeData.NumeroOferentes}</span>
+          </div>
+        )}
+        {nodeData.CantidadReclamos > 0 && (
+          <div className="summary-row">
+            <span className="summary-label">Reclamos</span>
+            <span className="summary-value warning">{nodeData.CantidadReclamos}</span>
+          </div>
+        )}
+      </div>
+
+      <button
+        onClick={() => setShowDetails(!showDetails)}
+        className="toggle-details"
+      >
+        {showDetails ? 'Ocultar detalles completos' : 'Ver detalles completos'}
+      </button>
 
       {showDetails && (
         <div className="details-panel">
-          {Object.keys(nodeData)
-            .filter(key => !key.startsWith('_'))
-            .map((key) => (
+          {(() => {
+            const formatValue = (key: string, value: any) => {
+              if (value === null || value === undefined) return 'N/A'
+
+              const moneyFields = ['Monto Estimado Adjudicado', 'MontoEstimado', 'MontoLineaAdjudica', 'MontoUnitarioOferta', 'Valor Total Ofertado']
+              const integerFields = ['Cantidad', 'Cantidad Ofertada', 'CantidadAdjudicada', 'CantidadReclamos', 'NumeroAprobacion', 'NumeroOferentes']
+              const codeFields = ['CodigoEstadoLicitacion', 'CodigoOrganismo', 'CodigoProveedor', 'CodigoTipo', 'CodigoExterno']
+
+              if (key === 'supplier_rut') {
+                return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')
+              } else if (moneyFields.includes(key)) {
+                const numValue = typeof value === 'number' ? value : parseFloat(value)
+                return !isNaN(numValue) ? '$' + numValue.toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : 'N/A'
+              } else if (integerFields.includes(key)) {
+                const numValue = typeof value === 'number' ? value : parseFloat(value)
+                return !isNaN(numValue) ? Math.round(numValue).toLocaleString('es-CL') : 'N/A'
+              } else if (codeFields.includes(key)) {
+                return value.toString()
+              } else if (key === 'x' || key === 'y') {
+                const numValue = typeof value === 'number' ? value : parseFloat(value)
+                return !isNaN(numValue) ? numValue.toLocaleString('es-CL', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) : 'N/A'
+              } else if (key.toLowerCase().includes('fecha') || key.toLowerCase().includes('date')) {
+                const date = new Date(value)
+                const isFirstActivityDate = key === 'first_activity_date'
+                if (!isNaN(date.getTime()) && (isFirstActivityDate || date.getFullYear() >= 2000)) {
+                  return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })
+                }
+                return 'N/A'
+              } else if (typeof value === 'number' && (value === 0 || value === 1)) {
+                return value === 1 ? 'Sí' : 'No'
+              } else if (typeof value === 'number') {
+                return value.toLocaleString('es-CL')
+              }
+              return value.toString()
+            }
+
+            // Organize fields by importance
+            const priorityFields = [
+              'tender_name', 'CodigoExterno', 'supplier_name', 'supplier_rut',
+              'MontoLineaAdjudica', 'MontoEstimado', 'FechaAdjudicacion', 'FechaPublicacion',
+              'NumeroOferentes', 'CantidadReclamos'
+            ]
+
+            const allFields = Object.keys(nodeData).filter(key => !key.startsWith('_'))
+            const orderedFields = [
+              ...priorityFields.filter(key => allFields.includes(key)),
+              ...allFields.filter(key => !priorityFields.includes(key))
+            ]
+
+            return orderedFields.map((key) => (
               <div key={key} className="detail-item">
-                <span className="detail-key">{key.replace(/_/g, ' ')}</span>
-                <span className="detail-value">
-                  {nodeData[key]?.toString() || 'N/A'}
-                </span>
+                <span className="detail-key">{key}</span>
+                <span className="detail-value">{formatValue(key, nodeData[key])}</span>
               </div>
-            ))}
+            ))
+          })()}
         </div>
       )}
 
@@ -147,29 +269,59 @@ export function Detail() {
       )}
 
       {logs.length > 0 && (
-        <div className="timeline-container">
-          {logs.map((log, index) => (
-            <div
-              key={index}
-              className="timeline-item"
-              ref={index === logs.length - 1 ? latestLogRef : null}
-            >
-              {index > 0 && <div className="timeline-line" />}
+        <div className="console-wrapper">
+          <div className="console-header">
+            <div className="console-title">
+              <span className="console-icon">▸</span>
+              Investigación en Progreso
+              {!isInvestigating && <span className="console-status">● Completada</span>}
+            </div>
+            <div className="console-info">{logs.length} eventos</div>
+          </div>
+          <div className="timeline-container">
+            {logs.map((log, index) => (
+              <div
+                key={index}
+                className="timeline-item"
+                ref={index === logs.length - 1 ? latestLogRef : null}
+              >
+                <div className={`log-node ${log.type}`}>
+                  <div className="node-content">
+                    <div className="node-header">
+                      <span className="node-timestamp">
+                        {new Date(log.timestamp).toLocaleTimeString()}
+                      </span>
+                      <span className="node-type">
+                        {log.type === 'log' ? '[LOG]' : log.type === 'result' ? '[RESULT]' : '[ERROR]'}
+                      </span>
+                      <span className="node-message">{log.message}</span>
+                    </div>
 
-              <div className="log-node">
-                <div className="node-dot" />
-                <div className="node-content">
-                  <div className="node-header">
-                    <span className="node-type">Log</span>
-                    <span className="node-timestamp">
-                      {new Date(log.timestamp).toLocaleTimeString()}
-                    </span>
+                    {log.type === 'result' && log.tasks_by_id && (
+                      <div className="result-details">
+                        <h3>Resultados de Tareas</h3>
+                        {log.tasks_by_id.map((task, idx) => (
+                          <div key={idx} className={`task-result ${task.validation_passed ? 'passed' : 'failed'}`}>
+                            <div className="task-header">
+                              <span className="task-code">{task.task_code}</span>
+                              <span className={`task-status ${task.validation_passed ? 'passed' : 'failed'}`}>
+                                {task.validation_passed ? '✓ APROBADO' : '✗ FALLADO'}
+                              </span>
+                            </div>
+                            <div className="task-name">{task.task_name}</div>
+                            <div className="task-findings">Hallazgos: {task.findings_count}</div>
+                          </div>
+                        ))}
+                        {log.workflow_summary && (
+                          <pre className="workflow-summary">{log.workflow_summary}</pre>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <div className="node-message">{log.message}</div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </div>

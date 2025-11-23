@@ -22,11 +22,24 @@ export function Explore() {
         const coord = new Coordinator()
         coord.databaseConnector(wasmConnector())
 
-        // Load parquet file into DuckDB
-        // Use fetch to get the file URL that works with Vite's dev server
-        await coord.exec([
-          loadParquet("data", `${window.location.origin}/data/lic_2020-1_umap.parquet`)
-        ])
+        // Configure DuckDB settings to handle large parquet files
+        await coord.exec("SET preserve_insertion_order=false")
+
+        // Load only the columns we need from the parquet file to reduce memory usage
+        await coord.exec(`
+          CREATE TABLE data AS
+          SELECT
+            CodigoExterno,
+            tender_name,
+            x,
+            y,
+            MontoEstimado,
+            MontoLineaAdjudica,
+            first_activity_date,
+            FechaAdjudicacion,
+            FechaPublicacion
+          FROM parquet_scan('${window.location.origin}/data/all_months_tsne_gpu.parquet')
+        `)
 
         // Add unique row ID (CodigoExterno has duplicates)
         await coord.exec("ALTER TABLE data ADD COLUMN _row_id INTEGER")

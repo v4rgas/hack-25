@@ -5,6 +5,8 @@ services:
       network: host
     ports:
       - "8001:8000"
+    env_file:
+      - ./backend/.env
     volumes:
       - ./backend/app:/app/app
       - ./backend/datasets:/app/datasets
