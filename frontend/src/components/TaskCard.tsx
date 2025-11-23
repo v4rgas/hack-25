@@ -26,14 +26,11 @@ interface TaskCardProps {
 }
 
 export function TaskCard({
-  taskId,
   taskCode,
-  taskName,
   severity,
   events,
   result,
   status,
-  taskCode,
 }: TaskCardProps) {
   const taskFromMap = TASKS_MAP.find((t) => t.code === taskCode)!;
   const displayName = taskFromMap.name;
