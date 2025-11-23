@@ -396,8 +396,8 @@ export function Explore() {
               title: "SQL Filters",
               items: [
                 {
-                  name: "Adjudicación Rápida (<30 días)",
-                  predicate: "date_diff('day', first_activity_date, FechaAdjudicacion) < 30"
+                  name: "Proveedores reciente constitución (<30 días)",
+                  predicate: "abs(date_diff('day', first_activity_date::date, coalesce(FechaAdjudicacion::date, FechaCierre::date, '1900-01-01'::date))) < 30"
                 },
                 {
                   name: "Adjudicación Diaria > $1M (desde inicio)",
