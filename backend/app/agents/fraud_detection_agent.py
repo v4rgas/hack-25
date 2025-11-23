@@ -12,7 +12,6 @@ from app.prompts import fraud_detection_agent
 from app.schemas import FraudDetectionInput, FraudDetectionOutput
 from app.tools.get_plan import get_plan
 from app.tools.read_buyer_attachments_table import read_buyer_attachments_table
-from app.tools.download_buyer_attachment import download_buyer_attachment
 from app.tools.read_buyer_attachment_doc import read_buyer_attachment_doc
 from app.tools.read_award_result import read_award_result
 from app.tools.read_award_result_attachment_doc import read_award_result_attachment_doc
@@ -28,7 +27,6 @@ class FraudDetectionAgent:
     Available tools:
     - get_plan: Creates detailed investigation plans
     - read_buyer_attachments_table: Lists all tender documents
-    - download_buyer_attachment: Downloads specific documents
     - read_buyer_attachment_doc: Extracts and analyzes document content
     - read_supplier_attachments: Analyzes supplier submissions
     - read_award: Checks award decisions and justifications
@@ -72,7 +70,6 @@ class FraudDetectionAgent:
         tools = [
             get_plan,
             read_buyer_attachments_table,
-            download_buyer_attachment,
             read_buyer_attachment_doc,
             read_award_result,
             read_award_result_attachment_doc

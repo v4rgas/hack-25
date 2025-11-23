@@ -12,7 +12,6 @@ from app.config import settings
 from app.prompts import simple_agent
 from app.tools.get_plan import get_plan
 from app.tools.read_buyer_attachments_table import read_buyer_attachments_table
-from app.tools.download_buyer_attachment import download_buyer_attachment
 from app.tools.read_buyer_attachment_doc import read_buyer_attachment_doc
 from app.tools.read_award_result import read_award_result
 from app.tools.read_award_result_attachment_doc import read_award_result_attachment_doc
@@ -36,7 +35,6 @@ class SimpleAgent:
     Available tools:
     - get_plan: Creates investigation plans
     - read_buyer_attachments_table: Lists tender documents
-    - download_buyer_attachment: Downloads specific attachments
     - read_buyer_attachment_doc: Extracts text from PDF documents
     - read_award_result: Retrieves award decision and results
 
@@ -73,7 +71,6 @@ class SimpleAgent:
         tools = [
             get_plan,
             read_buyer_attachments_table,
-            download_buyer_attachment,
             read_buyer_attachment_doc,
             read_award_result,
             read_award_result_attachment_doc

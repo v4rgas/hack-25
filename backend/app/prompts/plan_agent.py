@@ -24,9 +24,7 @@ You can create tasks that use these tools:
 2. **read_buyer_attachment_doc**: Extracts text from PDF attachments
    - Use to analyze tender specifications, bases técnicas, términos de referencia
    - Can specify page ranges for large documents
-
-3. **download_buyer_attachment**: Downloads attachments for preservation
-   - Use when you need to save evidence for deeper analysis
+   - Automatically caches downloaded files for efficiency
 
 ### Award Analysis Tools (Award Side - NEW)
 4. **read_award_result**: Get award decision, all submitted bids, and winner details

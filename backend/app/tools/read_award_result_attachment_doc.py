@@ -1,11 +1,13 @@
 import base64
 import os
 import tempfile
+import time
 from pydantic import BaseModel, Field
 from langchain.tools import tool
 import requests
 from bs4 import BeautifulSoup
 from mistralai import Mistral
+from mistralai.models import SDKError
 from app.tools.read_award_result import extract_qs_from_award_page, fetch_award_modal_html, download_award_attachment_by_row_id
 from app.config import settings
 
@@ -56,7 +58,9 @@ def read_award_result_attachment_doc(id: str, row_id: int, start_page: int, end_
         cache_filename = f"{id}_{row_id}.pdf"
         cache_path = os.path.join(temp_subdir, cache_filename)
         
+        cached = False
         if os.path.exists(cache_path):
+            cached = True
             with open(cache_path, 'rb') as f:
                 file_content = f.read()
             file_size = len(file_content)
@@ -97,7 +101,29 @@ def read_award_result_attachment_doc(id: str, row_id: int, start_page: int, end_
 
         ocr_params["pages"] = pages_to_process
 
-        ocr_response = client.ocr.process(**ocr_params)
+        max_retries = 5
+        base_delay = 1.0
+        ocr_response = None
+        
+        for attempt in range(max_retries):
+            try:
+                ocr_response = client.ocr.process(**ocr_params)
+                break
+            except SDKError as e:
+                http_res = e.args[1] if len(e.args) > 1 else None
+                if http_res and hasattr(http_res, 'status_code') and http_res.status_code == 429:
+                    if attempt < max_retries - 1:
+                        delay = base_delay * (2 ** attempt)
+                        print(f"Rate limited, retrying in {delay:.1f}s (attempt {attempt + 1}/{max_retries})...")
+                        time.sleep(delay)
+                        continue
+                    else:
+                        raise
+                else:
+                    raise
+        
+        if ocr_response is None:
+            raise Exception("Failed to get OCR response after retries")
 
         extracted_text = []
         pages_read = []
@@ -122,7 +148,8 @@ def read_award_result_attachment_doc(id: str, row_id: int, start_page: int, end_
             "total_pages": total_pages,
             "pages_read": pages_read,
             "file_size": file_size,
-            "success": True
+            "success": True,
+            "cached": cached
         }
 
     except Exception as e:

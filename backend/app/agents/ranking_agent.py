@@ -11,7 +11,6 @@ from app.config import settings
 from app.prompts import ranking_agent
 from app.schemas import RankingInput, RankingOutput, TaskRankingOutput
 from app.tools.read_buyer_attachments_table import read_buyer_attachments_table
-from app.tools.download_buyer_attachment import download_buyer_attachment
 from app.tools.read_buyer_attachment_doc import read_buyer_attachment_doc
 from app.tools.read_award_result import read_award_result
 from app.tools.read_award_result_attachment_doc import read_award_result_attachment_doc
@@ -26,7 +25,6 @@ class RankingAgent:
 
     Available tools:
     - read_buyer_attachments_table: Lists tender documents
-    - download_buyer_attachment: Downloads specific attachments
     - read_buyer_attachment_doc: Analyzes document content
 
     Usage:
@@ -69,7 +67,6 @@ class RankingAgent:
         # Define tools for risk assessment
         tools = [
             read_buyer_attachments_table,
-            download_buyer_attachment,
             read_buyer_attachment_doc,
             read_award_result,
             read_award_result_attachment_doc

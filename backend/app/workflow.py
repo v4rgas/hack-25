@@ -559,9 +559,9 @@ Please investigate this task systematically and report your findings.
         self._send_log(session_id, "Cleaning up temporary files...")
 
         try:
-            # Get the temporary directory path used by download_buyer_attachment
+            # Get the temporary directory path used by read_buyer_attachment_doc
             temp_dir = tempfile.gettempdir()
-            temp_subdir = os.path.join(temp_dir, "mercado_publico_attachments")
+            temp_subdir = os.path.join(temp_dir, "mercado_publico_buyer_attachments")
 
             # Check if directory exists
             if not os.path.exists(temp_subdir):

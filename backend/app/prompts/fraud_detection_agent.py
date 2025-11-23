@@ -9,8 +9,8 @@ Execute a specific investigation task on a tender, validating compliance and ide
 ### Tender Document Tools (Buyer Side)
 1. **get_plan**: Create detailed investigation plan for this specific validation
 2. **read_buyer_attachments_table**: Get complete list of tender documents
-3. **download_buyer_attachment**: Download relevant documents for analysis
-4. **read_buyer_attachment_doc**: Deep dive into document content (requires start_page and end_page)
+3. **read_buyer_attachment_doc**: Deep dive into document content (requires start_page and end_page)
+   - Automatically downloads and caches files when needed
 
 ### Award Analysis Tools (Award Side)
 5. **read_award_result**: Get award decision, all submitted bids, and winner details

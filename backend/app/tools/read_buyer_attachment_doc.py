@@ -1,8 +1,12 @@
 import base64
+import os
+import tempfile
+import time
 from pydantic import BaseModel, Field
 from langchain.tools import tool
 
 from mistralai import Mistral
+from mistralai.models import SDKError
 
 from app.tools.read_supplier_attachments import (
     download_buyer_attachment_by_tender_id_and_row_id as _download_buyer_attachment
@@ -56,11 +60,26 @@ def read_buyer_attachment_doc(
         }
 
     try:
-        # Download the file content
-        file_content = _download_buyer_attachment(tender_id, row_id)
-        file_size = len(file_content)
+        temp_dir = tempfile.gettempdir()
+        temp_subdir = os.path.join(temp_dir, "mercado_publico_buyer_attachments")
+        os.makedirs(temp_subdir, exist_ok=True)
+        
+        cache_filename = f"{tender_id}_{row_id}.pdf"
+        cache_path = os.path.join(temp_subdir, cache_filename)
+        
+        cached = False
+        if os.path.exists(cache_path):
+            cached = True
+            with open(cache_path, 'rb') as f:
+                file_content = f.read()
+            file_size = len(file_content)
+        else:
+            file_content = _download_buyer_attachment(tender_id, row_id)
+            file_size = len(file_content)
+            
+            with open(cache_path, 'wb') as f:
+                f.write(file_content)
 
-        # Encode PDF to base64
         base64_pdf = base64.b64encode(file_content).decode('utf-8')
 
         # Initialize Mistral client
@@ -86,8 +105,30 @@ def read_buyer_attachment_doc(
         # Add pages parameter
         ocr_params["pages"] = pages_to_process
 
-        # Call Mistral OCR API
-        ocr_response = client.ocr.process(**ocr_params)
+        # Call Mistral OCR API with retry logic for rate limits
+        max_retries = 5
+        base_delay = 1.0
+        ocr_response = None
+        
+        for attempt in range(max_retries):
+            try:
+                ocr_response = client.ocr.process(**ocr_params)
+                break
+            except SDKError as e:
+                http_res = e.args[1] if len(e.args) > 1 else None
+                if http_res and hasattr(http_res, 'status_code') and http_res.status_code == 429:
+                    if attempt < max_retries - 1:
+                        delay = base_delay * (2 ** attempt)
+                        print(f"Rate limited, retrying in {delay:.1f}s (attempt {attempt + 1}/{max_retries})...")
+                        time.sleep(delay)
+                        continue
+                    else:
+                        raise
+                else:
+                    raise
+        
+        if ocr_response is None:
+            raise Exception("Failed to get OCR response after retries")
 
         # Extract text from response
         extracted_text = []
@@ -116,7 +157,8 @@ def read_buyer_attachment_doc(
             "total_pages": total_pages,
             "pages_read": pages_read,
             "file_size": file_size,
-            "success": True
+            "success": True,
+            "cached": cached
         }
 
     except Exception as e:
