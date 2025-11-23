@@ -89,7 +89,7 @@ export function Explore() {
           }
 
           // Store in cache for next time
-          const responseToCache = new Response(allChunks, {
+          const responseToCache = new Response(allChunks.buffer, {
             headers: {
               'Content-Type': 'application/octet-stream',
               'Content-Length': allChunks.length.toString()
