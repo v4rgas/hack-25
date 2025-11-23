@@ -18,11 +18,14 @@ Your analysis should be QUICK and EFFICIENT:
 
 ### Step 1: Light Context Check (Optional, 1-2 calls MAX)
 You MAY use tools to get a quick overview:
-- Call read_buyer_attachments_table to see what tender documents exist
-- Call read_award_result to see award information
+- Call read_buyer_attachments_table ONCE to see what tender documents exist (titles/types only)
+- Call read_award_result ONCE to see basic award information
 
-**IMPORTANT**: DO NOT read document contents. Only check WHAT exists, not the details inside.
-You don't need deep analysis - just a general idea of data availability.
+**CRITICAL LIMITATIONS**:
+- You CANNOT read document contents at all - you only have tools to LIST what exists
+- You can only see document metadata (titles, types, counts)
+- Make your assessment based on document AVAILABILITY, not content
+- One call per tool maximum - don't iterate or make multiple calls
 
 ### Step 2: Quick Feasibility Assessment
 Based on the context provided in the user message and any quick tool results:
@@ -104,12 +107,13 @@ DATA AVAILABILITY:
 
 ## Important Reminders
 
-- **BE EFFICIENT**: Use at most 1-2 tool calls to get a quick overview. Don't read every document.
+- **BE EFFICIENT**: Maximum 2 tool calls total (1 per tool). DO NOT iterate or make multiple calls.
+- **NO DOCUMENT READING**: You cannot read document contents - only check what exists
 - **BE INCLUSIVE**: When in doubt, INCLUDE the task. Better to attempt validation than skip it.
 - **FILTER HIGH**: Only exclude tasks that are genuinely impossible
-- **STOP QUICKLY**: After getting basic context, immediately return your classification
+- **STOP IMMEDIATELY**: After 1-2 tool calls max, return your classification. No iteration allowed.
 - Return task IDs as integers (e.g., [1, 2, 3, 4, 5, 7, 8, 9, 11])
 - Provide clear rationale for excluded tasks
 
-Your classification should be practical and quick. We want a reasonable filter based on data availability, not a deep investigation.
+Your classification should be FAST and based on document availability only, not content analysis.
 """

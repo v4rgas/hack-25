@@ -97,9 +97,9 @@ class FraudDetectionWorkflow:
 
     def __init__(
         self,
-        ranking_model: str = "google/gemini-2.5-flash-lite",
-        detection_model: str = "google/gemini-2.5-flash-lite",
-        temperature: float = 0.7,
+        ranking_model: str = "google/gemini-2.5-flash-lite-preview-09-2025",
+        detection_model: str = "google/gemini-2.5-flash-lite-preview-09-2025",
+        temperature: float = 0,
         max_iterations: int = None,
         max_execution_time: int = None,
     ):

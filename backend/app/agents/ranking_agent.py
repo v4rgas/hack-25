@@ -14,9 +14,7 @@ from app.config import settings
 from app.prompts import ranking_agent
 from app.schemas import RankingInput, RankingOutput, TaskClassificationOutput
 from app.tools.read_buyer_attachments_table import read_buyer_attachments_table
-from app.tools.read_buyer_attachment_doc import read_buyer_attachment_doc
 from app.tools.read_award_result import read_award_result
-from app.tools.read_award_result_attachment_doc import read_award_result_attachment_doc
 from app.middleware import WebSocketStreamingMiddleware
 
 
@@ -37,7 +35,7 @@ class RankingAgent:
 
     Available tools:
     - read_buyer_attachments_table: Lists tender documents
-    - read_buyer_attachment_doc: Analyzes document content
+    - read_award_result: Gets award result information
 
     Usage:
         agent = RankingAgent()
@@ -57,6 +55,7 @@ class RankingAgent:
         self,
         model_name: str = "google/gemini-2.5-flash-lite-preview-09-2025",
         temperature: float = 0.7,
+        max_iterations: int = None,
     ):
         """
         Initialize the Ranking Agent.
@@ -64,9 +63,11 @@ class RankingAgent:
         Args:
             model_name: Anthropic model to use
             temperature: Temperature for model responses (0.0-1.0)
+            max_iterations: Maximum number of tool calls allowed (default from config)
         """
         self.model_name = model_name
         self.temperature = temperature
+        self.max_iterations = max_iterations or settings.ranking_max_iterations
 
         # Initialize model
         model = ChatOpenAI(
@@ -79,9 +80,7 @@ class RankingAgent:
         # Define tools for risk assessment
         tools = [
             read_buyer_attachments_table,
-            read_buyer_attachment_doc,
             read_award_result,
-            read_award_result_attachment_doc,
         ]
 
         # Create ranking agent with structured output and middleware
@@ -155,7 +154,12 @@ Focus on filtering OUT tasks that are impossible due to missing critical data or
             state["session_id"] = session_id
             state["task_info"] = {"name": "Clasificación de tareas factibles"}
 
-        result = self.agent.invoke(state)
+        # Configure agent with iteration limits
+        config = {
+            "recursion_limit": self.max_iterations,
+        }
+
+        result = self.agent.invoke(state, config=config)
 
         # Return the structured response
         if "structured_response" not in result:
@@ -200,7 +204,12 @@ Additional Context: {tender.additional_context}
 Analyze ALL tenders above and return a single ranking of the TOP 5 items with highest fraud risk.
 The ranking should compare risk across all provided tenders, not just within each tender."""
 
-        result = self.agent.invoke({"messages": [{"role": "user", "content": message}]})
+        # Configure agent with iteration limits
+        config = {
+            "recursion_limit": self.max_iterations,
+        }
+
+        result = self.agent.invoke({"messages": [{"role": "user", "content": message}]}, config=config)
 
         if "structured_response" not in result:
             # Debug: Print available keys to understand the issue

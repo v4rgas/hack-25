@@ -49,8 +49,8 @@ class SummaryAgent:
 
     def __init__(
         self,
-        model_name: str = "google/gemini-2.5-flash-lite",
-        temperature: float = 0.3,
+        model_name: str = "google/gemini-2.5-flash-lite-preview-09-2025",
+        temperature: float = 0,
     ):
         """
         Initialize the Summary Agent.

@@ -9,6 +9,7 @@ class InvestigationTask(TypedDict):
     """Investigation task with its subtasks"""
     id: int  # Sequential ID
     code: str  # Task code (H-01, H-02, etc.)
+    title: str  # Task title (same as code for display)
     name: str  # Task description
     desc: str  # What the agent should validate
     where_to_look: str  # Where to look for information
@@ -20,6 +21,7 @@ INVESTIGATION_TASKS: List[InvestigationTask] = [
   {
     "id": 1,
     "code": "H-01",
+    "title": "Task 1",
     "name": "Existencia de Bases Administrativas y Bases Técnicas diferenciadas",
     "desc": "Verificar que existan documentos o secciones diferenciadas como Bases Administrativas y Bases Técnicas.",
     "where_to_look": "Anexos y contenido de Bases",
@@ -32,6 +34,7 @@ INVESTIGATION_TASKS: List[InvestigationTask] = [
   {
     "id": 2,
     "code": "H-02",
+    "title": "Task 2",
     "name": "Bases Técnicas describen claramente el bien o servicio",
     "desc": "Verificar que las Bases Técnicas describan con parámetros verificables el objeto de la licitación.",
     "where_to_look": "Bases Técnicas",
@@ -44,6 +47,7 @@ INVESTIGATION_TASKS: List[InvestigationTask] = [
   {
     "id": 3,
     "code": "H-03",
+    "title": "Task 3",
     "name": "Bases Administrativas regulan etapas, plazos y criterios",
     "desc": "Verificar que las Bases incluyan etapas del proceso, plazos, consultas, criterios y adjudicación.",
     "where_to_look": "Bases Administrativas",
@@ -59,6 +63,7 @@ INVESTIGATION_TASKS: List[InvestigationTask] = [
   {
     "id": 4,
     "code": "H-07",
+    "title": "Task 4",
     "name": "Criterios técnicos y económicos claros con ponderaciones",
     "desc": "Verificar criterios con peso, fórmula y reglas de puntaje.",
     "where_to_look": "Bases Adm.",
@@ -72,6 +77,7 @@ INVESTIGATION_TASKS: List[InvestigationTask] = [
   {
     "id": 5,
     "code": "H-09",
+    "title": "Task 5",
     "name": "Ausencia de diferencias arbitrarias entre oferentes",
     "desc": "Detectar requisitos injustificados que favorezcan a alguien.",
     "where_to_look": "Bases Adm./Técnicas",
@@ -84,6 +90,7 @@ INVESTIGATION_TASKS: List[InvestigationTask] = [
   {
     "id": 6,
     "code": "H-13",
+    "title": "Task 6",
     "name": "Participación MIPYME no bloqueada",
     "desc": "Evaluar si requisitos bloquean a pequeñas empresas.",
     "where_to_look": "Bases Adm.",
@@ -96,6 +103,7 @@ INVESTIGATION_TASKS: List[InvestigationTask] = [
   {
     "id": 7,
     "code": "H-14",
+    "title": "Task 7",
     "name": "Existencia de criterio relacionado con integridad y compliance",
     "desc": "Verificar criterio sobre integridad/cumplimiento normativo.",
     "where_to_look": "Bases Adm.",
@@ -107,6 +115,7 @@ INVESTIGATION_TASKS: List[InvestigationTask] = [
   {
     "id": 8,
     "code": "H-31",
+    "title": "Task 8",
     "name": "Publicación del contrato y su aprobación",
     "desc": "Verificar publicación del contrato y su aprobación administrativa.",
     "where_to_look": "Ficha/Contrato",
@@ -119,6 +128,7 @@ INVESTIGATION_TASKS: List[InvestigationTask] = [
   {
     "id": 9,
     "code": "H-08",
+    "title": "Task 9",
     "name": "Criterios objetivos sin discrecionalidad excesiva",
     "desc": "Verificar ausencia de criterios ambiguos como 'a exclusivo juicio'.",
     "where_to_look": "Bases Adm.",
@@ -131,6 +141,7 @@ INVESTIGATION_TASKS: List[InvestigationTask] = [
   {
     "id": 10,
     "code": "H-05",
+    "title": "Task 10",
     "name": "Presupuesto estimado declarado",
     "desc": "Verificar existencia de presupuesto referencial.",
     "where_to_look": "Ficha/Bases",
@@ -142,6 +153,7 @@ INVESTIGATION_TASKS: List[InvestigationTask] = [
   {
     "id": 11,
     "code": "H-06",
+    "title": "Task 11",
     "name": "Bases orientadas a combinación ventajosa de costo-beneficio",
     "desc": "Verificar que no se use solo precio.",
     "where_to_look": "Bases Adm.",

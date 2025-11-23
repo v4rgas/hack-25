@@ -239,12 +239,12 @@ class WebSocketStreamingMiddleware(AgentMiddleware):
                     session_id,
                     {
                         "type": "log",
-                        "message": tool_call_msg,
+                        "message": message,
                         "tool": tool_name,
                         "timestamp": datetime.now().isoformat(),
                     }
                 )
-                print(f"[MIDDLEWARE] Tool call: {tool_call_msg}")
+                print(f"[MIDDLEWARE] Tool call: {message}")
             except Exception as e:
                 print(f"[MIDDLEWARE] Error sending tool call event: {e}")
                 import traceback
