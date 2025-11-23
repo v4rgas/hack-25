@@ -8,8 +8,10 @@ when agents are executing, including:
 """
 
 import asyncio
+import json
 import threading
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Callable
 
 from langchain.agents.middleware import AgentMiddleware, AgentState
@@ -19,6 +21,10 @@ from langgraph.runtime import Runtime
 from langgraph.types import Command
 
 from app.utils.websocket_manager import manager
+
+TASK_MAP_PATH = Path(__file__).parent / "task_map.json"
+with open(TASK_MAP_PATH, "r", encoding="utf-8") as f:
+    TASK_MAP = {task["id"]: task["code"] for task in json.load(f)}
 
 
 def send_ws_event_sync(session_id: str, event: dict):
@@ -98,7 +104,8 @@ class WebSocketStreamingMiddleware(AgentMiddleware):
             try:
                 task_name = task_info.get("name", "investigación")
                 task_id = task_info.get("id", "")
-                task_prefix = f"[TASK {task_id}] " if task_id else ""
+                task_code = TASK_MAP.get(task_id, f"TASK {task_id}") if task_id else ""
+                task_prefix = f"[{task_code}] " if task_code else ""
                 message = f"{task_prefix}Analizando con IA: {task_name}..."
 
                 # Enviar evento por websocket
@@ -218,8 +225,15 @@ class WebSocketStreamingMiddleware(AgentMiddleware):
         # ANTES de ejecutar el tool - Enviar detalles del tool
         if session_id:
             try:
-                args_str = self._format_tool_args(tool_name, tool_args)
-                tool_call_msg = f"{task_prefix}[TOOL] {tool_name}({args_str})"
+                task_info = request.state.get("task_info", {})
+                task_id = task_info.get("id", "")
+                task_code = TASK_MAP.get(task_id, f"TASK {task_id}") if task_id else ""
+                task_prefix = f"[{task_code}] " if task_code else ""
+
+                base_message = self.TOOL_MESSAGES.get(
+                    tool_name, f"Ejecutando {tool_name}..."
+                )
+                message = f"{task_prefix}{base_message}"
 
                 send_ws_event_sync(
                     session_id,
