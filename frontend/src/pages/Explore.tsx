@@ -123,8 +123,8 @@ export function Explore() {
         `)
 
         // Add unique row ID (CodigoExterno has duplicates)
-        await coord.exec("ALTER TABLE data ADD COLUMN _row_id INTEGER")
-        await coord.exec("UPDATE data SET _row_id = rowid")
+        await coord.exec("ALTER TABLE data ADD COLUMN _row_id VARCHAR")
+        await coord.exec("UPDATE data SET _row_id = 'SEARCHABLE_ROW_ID_'||rowid")
 
         // Add category column based on MontoEstimado ranges
         await coord.exec("ALTER TABLE data ADD COLUMN _category VARCHAR")
@@ -158,53 +158,87 @@ export function Explore() {
     init()
   }, [])
 
-  // DOM-based click detection for individual nodes
+  // Super simple: on ANY click, find any element with title attribute (including Shadow DOM)
   useEffect(() => {
     if (!coordinator || !containerRef.current) return
 
-    const handleClick = async (event: MouseEvent) => {
-      const target = event.target as HTMLElement
+    const handleClick = () => {
+      console.log('========== CLICK DETECTED ==========')
 
-      // Check if a circle (node) was clicked
-      if (target.tagName.toLowerCase() === 'circle') {
-        console.log('🔵 Circle clicked!')
+      // Small delay to let the DOM update after click
+      setTimeout(() => {
+        console.log('🔍 Looking for ANY element with title attribute (including Shadow DOM)...')
 
-        // Small delay to let the DOM update
-        setTimeout(() => {
-          // Find the div with the title attribute containing the CodigoExterno
-          const titleDiv = containerRef.current?.querySelector('.text-ellipsis.whitespace-nowrap.overflow-hidden.max-w-72[title]')
+        // Function to recursively search through Shadow DOMs
+        const findAllWithTitle = (root: Document | ShadowRoot | Element): Element[] => {
+          const elements: Element[] = []
 
-          if (titleDiv) {
-            const codigoExterno = titleDiv.getAttribute('title')
-            console.log('📋 Extracted CodigoExterno:', codigoExterno)
+          // Search in current root
+          const found = root.querySelectorAll('[title]')
+          elements.push(...Array.from(found))
 
-            if (codigoExterno) {
-              // Validate format (alphanumeric, hyphens, underscores)
-              const isValidFormat = /^[\w-]+$/.test(codigoExterno)
-              console.log('✓ Valid format:', isValidFormat)
-
-              if (isValidFormat && coordinator) {
-                // Escape single quotes to prevent SQL injection
-                const escapedCodigo = codigoExterno.replace(/'/g, "''")
-
-                coordinator.query(
-                  `SELECT * FROM data WHERE CodigoExterno = '${escapedCodigo}'`
-                ).then(result => {
-                  const dataArray = result ? Array.from(result) : null
-                  console.log('📊 Query result:', dataArray)
-                  if (dataArray && dataArray.length > 0) {
-                    setSelectedData(dataArray)
-                  }
-                }).catch(err => {
-                  console.error('Failed to query selected node:', err)
-                })
-              }
+          // Search in all shadow roots
+          const allElements = root.querySelectorAll('*')
+          allElements.forEach(el => {
+            if (el.shadowRoot) {
+              console.log('Found shadow root in:', el.tagName)
+              elements.push(...findAllWithTitle(el.shadowRoot))
             }
-          } else {
-            console.log('⚠️ Title div not found')
+          })
+
+          return elements
+        }
+
+        // Find ALL elements with title attribute (including shadow DOM!)
+        const allElementsWithTitle = findAllWithTitle(document)
+        console.log('Found elements with title (including shadow DOM):', allElementsWithTitle.length)
+
+        // Log all of them with more details
+        allElementsWithTitle.forEach((el, index) => {
+          const title = el.getAttribute('title')
+          const tagName = el.tagName.toLowerCase()
+          const classes = el.className
+          console.log(`Element ${index}: <${tagName}> title="${title}" class="${classes}"`)
+        })
+
+        // Look for one that matches the SEARCHABLE_ROW_ID pattern
+        // Pattern: SEARCHABLE_ROW_ID_XXXXXX (like "SEARCHABLE_ROW_ID_400086")
+        const pattern = /^SEARCHABLE_ROW_ID_\d+$/
+
+        let foundRowId: string | null = null
+
+        for (const el of Array.from(allElementsWithTitle)) {
+          const title = el.getAttribute('title')
+          console.log(`Testing title "${title}" against pattern:`, title ? pattern.test(title) : false)
+          if (title && pattern.test(title)) {
+            foundRowId = title
+            console.log('✅ Found matching row ID:', foundRowId, 'on element:', el)
+            break
           }
-        }, 100) // Small delay to ensure DOM has updated
-      }
+        }
+
+        if (foundRowId && coordinator) {
+          console.log('🔵 Querying node with row ID:', foundRowId)
+
+          // Escape single quotes to prevent SQL injection
+          const escapedRowId = foundRowId.replace(/'/g, "''")
+
+          coordinator.query(
+            `SELECT * FROM data WHERE _row_id = '${escapedRowId}'`
+          ).then(result => {
+            const dataArray = result ? Array.from(result) : null
+            console.log('📊 Query result:', dataArray)
+            if (dataArray && dataArray.length > 0) {
+              setSelectedData(dataArray)
+            }
+          }).catch(err => {
+            console.error('❌ Failed to query selected node:', err)
+          })
+        } else {
+          console.log('⚠️ No element with matching SEARCHABLE_ROW_ID pattern found - clearing selection')
+          setSelectedData(null)
+        }
+      }, 300) // Longer delay to let DOM update
     }
 
     const container = containerRef.current
