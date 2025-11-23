@@ -7,7 +7,7 @@ from typing import List
 from pydantic import BaseModel, Field
 from langchain_openai import ChatOpenAI
 from langchain.agents import create_agent
-from langchain.agents.structured_output import ProviderStrategy
+from langchain.agents.structured_output import ToolStrategy
 
 from app.config import settings
 from app.prompts import plan_agent
@@ -63,7 +63,7 @@ class PlanAgent:
             model=model,
             tools=[],  # No tools needed for planning
             system_prompt=plan_agent.SYS_PROMPT,
-            response_format=ProviderStrategy(PlanOutput),
+            response_format=ToolStrategy(PlanOutput),
         )
 
     def run(self, message: str) -> PlanOutput:
