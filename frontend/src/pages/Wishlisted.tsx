@@ -53,8 +53,8 @@ export function Wishlisted() {
     const date = new Date(dateString)
     return date.toLocaleDateString('es-ES', {
       year: 'numeric',
-      month: 'long',
-      day: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
     })
@@ -63,27 +63,23 @@ export function Wishlisted() {
   if (!isAuthenticated) {
     return (
       <div className="wishlisted-container">
+        <button onClick={() => navigate('/')} className="back-button">
+          ← Volver
+        </button>
         <div className="wishlisted-content">
-          <button onClick={() => navigate('/')} className="back-button">
-            ← Volver
-          </button>
           <h1 className="wishlisted-title">Wishlist Admin</h1>
           <form onSubmit={handleSubmit} className="api-key-form">
-            <div className="form-group">
-              <label htmlFor="apiKey">API Key</label>
-              <input
-                type="password"
-                id="apiKey"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="Enter admin API key"
-                required
-                disabled={loading}
-              />
-            </div>
+            <input
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="Enter API key"
+              required
+              disabled={loading}
+            />
             {error && <div className="error-message">{error}</div>}
-            <button type="submit" className="submit-button" disabled={loading}>
-              {loading ? 'Authenticating...' : 'Access Wishlist'}
+            <button type="submit" disabled={loading}>
+              {loading ? 'Loading...' : 'Access'}
             </button>
           </form>
         </div>
@@ -93,11 +89,12 @@ export function Wishlisted() {
 
   return (
     <div className="wishlisted-container">
+      <button onClick={() => navigate('/')} className="back-button">
+        ← Volver
+      </button>
       <div className="wishlisted-content">
-        <div className="header-actions">
-          <button onClick={() => navigate('/')} className="back-button">
-            ← Volver
-          </button>
+        <div className="header">
+          <h1 className="wishlisted-title">Wishlist ({entries.length})</h1>
           <button
             onClick={() => {
               setIsAuthenticated(false)
@@ -109,28 +106,30 @@ export function Wishlisted() {
             Logout
           </button>
         </div>
-        <h1 className="wishlisted-title">Wishlist Entries ({entries.length})</h1>
-        <div className="entries-container">
-          {entries.length === 0 ? (
-            <p className="no-entries">No entries yet</p>
-          ) : (
-            <div className="entries-grid">
+        {entries.length === 0 ? (
+          <p className="no-entries">No entries</p>
+        ) : (
+          <table className="wishlist-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Email</th>
+                <th>Reason</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
               {entries.map((entry) => (
-                <div key={entry.id} className="entry-card">
-                  <div className="entry-header">
-                    <span className="entry-id">#{entry.id}</span>
-                    <span className="entry-date">{formatDate(entry.created_at)}</span>
-                  </div>
-                  <div className="entry-email">{entry.email}</div>
-                  <div className="entry-reason">
-                    <strong>Reason:</strong>
-                    <p>{entry.reason}</p>
-                  </div>
-                </div>
+                <tr key={entry.id}>
+                  <td>{entry.id}</td>
+                  <td>{entry.email}</td>
+                  <td>{entry.reason}</td>
+                  <td>{formatDate(entry.created_at)}</td>
+                </tr>
               ))}
-            </div>
-          )}
-        </div>
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   )
