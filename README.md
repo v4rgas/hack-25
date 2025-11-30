@@ -93,4 +93,4 @@ Built by:
 
 ## License
 
-This project was created for the Platanus Hackathon 2024 and is open source.
+This project was created for the Platanus Hackathon 2025 and is open source.
